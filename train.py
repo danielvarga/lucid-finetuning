@@ -14,7 +14,12 @@ from keras.layers import GlobalAveragePooling2D
 from keras.layers.convolutional import Conv2D, MaxPooling2D, ZeroPadding2D
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
+
 from keras.applications.inception_v3 import InceptionV3
+from keras.applications.vgg16 import VGG16
+from keras.applications.vgg19 import VGG19
+from inception_v1 import InceptionV1
+
 from keras.preprocessing.image import ImageDataGenerator
 
 from tensorflow.core.protobuf import saver_pb2
@@ -57,7 +62,7 @@ def finetune(base_model, train_flow, test_flow, tags, train_samples_per_epoch, t
 
     # compile the model (should be done *after* setting layers to non-trainable)
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
-    model.fit_generator(train_flow, steps_per_epoch=train_samples_per_epoch//batch_size, nb_epoch=nb_epoch,
+    model.fit_generator(train_flow, steps_per_epoch=train_samples_per_epoch//batch_size, nb_epoch=0,
         validation_data=test_flow, validation_steps=test_samples_per_epoch//batch_size)
 
     # we chose to train the top 2 inception blocks, i.e. we will freeze
@@ -68,7 +73,7 @@ def finetune(base_model, train_flow, test_flow, tags, train_samples_per_epoch, t
     for layer in model.layers[cutoff:]:
         layer.trainable = True
 
-    model.compile(optimizer=SGD(lr=0.0001, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=SGD(lr=0.001, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
     model.fit_generator(train_flow, steps_per_epoch=train_samples_per_epoch//batch_size, nb_epoch=nb_epoch,
         validation_data=test_flow, validation_steps=test_samples_per_epoch//batch_size)
 
@@ -109,13 +114,16 @@ def load_data():
     return train_flow, test_flow, tags, train_samples_per_epoch, test_samples_per_epoch
 
 
-iv3 = InceptionV3(include_top=False, weights=None, input_tensor=None, input_shape=(299, 299, 3), pooling=None)
+# net = VGG19(include_top=False, weights='imagenet', input_tensor=None, input_shape=(299, 299, 3), pooling=None)
+
+net = InceptionV1(include_top=False, weights='imagenet', input_tensor=None, input_shape=(299, 299, 3), pooling=None)
+
 
 do_finetune = True
 
 if do_finetune:
     train_flow, test_flow, tags, train_samples_per_epoch, test_samples_per_epoch = load_data()
-    finetune(iv3, train_flow, test_flow, tags, train_samples_per_epoch, test_samples_per_epoch)
+    finetune(net, train_flow, test_flow, tags, train_samples_per_epoch, test_samples_per_epoch)
 
 graph_file = "model.pb"
 ckpt_file = "model.ckpt"
@@ -127,5 +135,5 @@ with open(graph_file, "rb") as f:
     graph_def.ParseFromString(f.read())
 
 for node in graph_def.node:
-    if "activation" in str(node):
-        print(node.name)
+    # if "activation" in str(node):
+    print(node.name)
