@@ -4,12 +4,10 @@
     ln -s kFineTuning/flowers17 .
 
     python train.py
-    bash freeze-googlenet.sh
     cp googlenetLucid.pb googlenetLucid-finetuned-flower17.pb
 
     # Manually set do_finetuning = False in train.py
     python train.py
-    bash freeze-googlenet.sh
     cp googlenetLucid.pb googlenetLucid-default.pb
 
     time cat googlenet-node-names | grep Branch_3_b_1x1_act/Relu | python vis.py googlenetLucid-finetuned-flower17.pb - grid-finetuned
@@ -22,7 +20,6 @@
     # Manually set weights=None in train.py line InceptionV1(include_top=False, weights=...
     # do_finetuning = True again at this point.
     python train.py
-    bash freeze-googlenet.sh
     cp googlenetLucid.pb googlenetLucid-fromscratch-flower17.pb
     time cat googlenet-node-names | grep Branch_3_b_1x1_act/Relu | python vis.py googlenetLucid-fromscratch-flower17.pb - grid-fromscratch
     open grid-fromscratch.png
